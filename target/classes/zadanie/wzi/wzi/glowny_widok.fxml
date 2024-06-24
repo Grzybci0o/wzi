@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="450.0" prefWidth="1070.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="zadanie.wzi.wzi.Controler.WziZadanieController">
+   <Pane layoutX="200.0" layoutY="29.0" prefHeight="450.0" prefWidth="1070.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <Separator layoutX="190.0" orientation="VERTICAL" prefHeight="450.0" />
+      <Button layoutX="15.0" layoutY="35.0" mnemonicParsing="false" onAction="#loadAction" prefHeight="25.0" prefWidth="160.0" text="Załaduj dane" />
+      <Button layoutX="15.0" layoutY="175.0" mnemonicParsing="false" onAction="#areaAction" prefHeight="25.0" prefWidth="160.0" text="Pokaż pole" />
+      <Button layoutX="15.0" layoutY="220.0" mnemonicParsing="false" onAction="#clearAction" prefHeight="25.0" prefWidth="160.0" text="Wyczyść obrazki" />
+      <Button layoutX="15.0" layoutY="265.0" mnemonicParsing="false" onAction="#resetAction" prefHeight="25.0" prefWidth="160.0" text="Zresetuj aplikację" />
+      <ComboBox fx:id="colors" layoutX="15.0" layoutY="80.0" onAction="#colorsAction" prefHeight="25.0" prefWidth="160.0" />
+      <CheckBox fx:id="polygon" layoutX="15.0" layoutY="118.0" mnemonicParsing="false" onAction="#polygonAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj wielokąt" />
+      <CheckBox fx:id="synchronize" layoutX="15.0" layoutY="310.0" mnemonicParsing="false" onAction="#synchronizeAction" prefHeight="25.0" prefWidth="159.0" text="Synchronizacja widoków" visible="false" />
+      <CheckBox fx:id="rotate" layoutX="15.0" layoutY="355.0" mnemonicParsing="false" onAction="#rotateAction" prefHeight="25.0" prefWidth="159.0" text="Rotacja obrazów" visible="false" />
+      <Slider fx:id="slider1" layoutX="205.0" layoutY="315.0" max="111.0" onMouseDragged="#changeValueOfSlider1" prefHeight="14.0" prefWidth="250.0" />
+      <Slider fx:id="slider3" layoutX="800.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider3" prefHeight="14.0" prefWidth="250.0" />
+      <Slider fx:id="slider2" layoutX="505.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider2" prefHeight="14.0" prefWidth="250.0" />
+      <StackPane fx:id="drawing1" layoutX="205.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
+         <ImageView fx:id="image1" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
+         <Canvas fx:id="draw1" height="250.0" width="250.0" />
+      </StackPane>
+      <StackPane fx:id="drawing2" layoutX="505.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
+         <ImageView fx:id="image2" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
+         <Canvas fx:id="draw2" height="250.0" width="250.0" />
+      </StackPane>
+      <StackPane fx:id="drawing3" layoutX="805.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
+         <ImageView fx:id="image3" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
+         <Canvas fx:id="draw3" height="250.0" width="250.0" />
+      </StackPane>
+      <Label fx:id="plik" layoutX="16.0" layoutY="14.0" prefHeight="17.0" prefWidth="159.0" />
+      <Slider fx:id="contrastSlider" layoutX="505.0" layoutY="361.0" onMouseDragged="#changeValueOfContrastSlider" prefHeight="14.0" prefWidth="250.0" />
+      <Slider fx:id="brigthnessSlider" layoutX="205.0" layoutY="361.0" onMouseDragged="#changeValueOfBrightnessSlider" prefHeight="14.0" prefWidth="250.0" />
+      <Slider fx:id="windowValueSlider" layoutX="800.0" layoutY="361.0" onMouseDragged="#changeValueOfWindowSlider" prefHeight="14.0" prefWidth="250.0" />
+      <Label fx:id="perimeterPixel" layoutX="613.0" layoutY="392.0" prefHeight="17.0" prefWidth="92.0" />
+      <Label fx:id="labelPerimeterPixel" layoutX="505.0" layoutY="392.0" prefHeight="17.0" prefWidth="108.0" text="Obwód w pixelach: " visible="false" />
+      <Label fx:id="perimeterVoxel" layoutX="613.0" layoutY="417.0" prefHeight="17.0" prefWidth="92.0" />
+      <Label fx:id="labelPerimeterVoxel" layoutX="505.0" layoutY="417.0" prefHeight="17.0" prefWidth="108.0" text="Obwód w voxelach: " visible="false" />
+      <Label fx:id="labelAreaVoxel" layoutX="207.0" layoutY="417.0" prefHeight="17.0" prefWidth="92.0" text="Pole w voxelach: " visible="false" />
+      <Label fx:id="areaVoxel" layoutX="299.0" layoutY="417.0" prefHeight="17.0" prefWidth="108.0" />
+      <Label fx:id="labelAreaPixel" layoutX="207.0" layoutY="392.0" prefHeight="17.0" prefWidth="92.0" text="Pole w pixelach: " visible="false" />
+      <Label fx:id="areaPixel" layoutX="299.0" layoutY="392.0" prefHeight="17.0" prefWidth="108.0" />
+      <Label layoutX="259.0" layoutY="343.0" text="Jasność:" />
+      <Label layoutX="583.0" layoutY="343.0" text="Kontrast:" />
+      <Label layoutX="871.0" layoutY="343.0" text="Okno:" />
+      <Label fx:id="brightness" layoutX="309.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
+      <Label fx:id="contrast" layoutX="633.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
+      <Label fx:id="windowValueLabel" layoutX="937.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
+      <CheckBox fx:id="voxel" layoutX="16.0" layoutY="143.0" mnemonicParsing="false" onAction="#voxelAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj voxel" />
+      <Slider fx:id="levelValueSlider" layoutX="800.0" layoutY="402.0" max="500.0" onMouseDragged="#changeValueOfLevelSlider" prefHeight="14.0" prefWidth="250.0" />
+      <Label layoutX="871.0" layoutY="384.0" text="Poziom:" />
+      <Label fx:id="levelValueLabel" layoutX="937.0" layoutY="384.0" prefHeight="17.0" prefWidth="69.0" />
+      <Label fx:id="machine_endian" layoutX="16.0" layoutY="372.0" prefHeight="41.0" prefWidth="160.0" wrapText="true" />
+      <Label fx:id="files_endian" layoutX="16.0" layoutY="417.0" prefHeight="17.0" prefWidth="160.0" />
+
+   </Pane>
+   <Label fx:id="valueSlider1" alignment="CENTER" layoutX="305.0" layoutY="294.0" prefHeight="17.0" prefWidth="50.0" />
+   <Label fx:id="valueSlider2" alignment="CENTER" layoutX="605.0" layoutY="295.0" prefHeight="17.0" prefWidth="50.0" />
+   <Label fx:id="valueSlider3" alignment="CENTER" layoutX="900.0" layoutY="294.0" prefHeight="17.0" prefWidth="50.0" textAlignment="CENTER" />
+</AnchorPane>
