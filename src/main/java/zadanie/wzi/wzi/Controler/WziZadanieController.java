@@ -1,12 +1,14 @@
 package zadanie.wzi.wzi.Controler;
 
 import javafx.beans.value.ChangeListener;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Point3D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
@@ -60,6 +62,8 @@ public class WziZadanieController {
     Label machine_endian;
     @FXML
     Label files_endian;
+    @FXML
+    Label treshHold;
 
 
     @FXML
@@ -76,9 +80,13 @@ public class WziZadanieController {
     Slider windowValueSlider;
     @FXML
     Slider levelValueSlider;
+    @FXML
+    Slider treshHoldSlider;
 
     @FXML
     ComboBox<String> colors;
+    @FXML
+    ComboBox<String> modes;
 
     @FXML
     ImageView image1;
@@ -97,11 +105,7 @@ public class WziZadanieController {
     @FXML
     CheckBox polygon;
     @FXML
-    CheckBox synchronize;
-    @FXML
     CheckBox voxel;
-    @FXML
-    CheckBox rotate;
 
     @FXML
     Canvas draw1;
@@ -129,14 +133,19 @@ public class WziZadanieController {
     @FXML
     private void initialize() {
         colors.getItems().addAll("gray",
-                "twilight",
-                "viridis",
                 "inferno",
                 "ocean",
                 "gist heist",
                 "copper");
 
         colors.getSelectionModel().selectFirst();
+
+        modes.getItems().addAll("none",
+                "avg",
+                "max",
+                "first hit");
+
+        modes.getSelectionModel().selectFirst();
     }
 
     @FXML
@@ -221,7 +230,7 @@ public class WziZadanieController {
                 valueSlider3.setText("0");
 
                 machine_endian.setText("Endian maszyny: " + ByteOrder.nativeOrder());
-                files_endian.setText("Endian plików: " + dicomDataList.get(0).getEndian());
+                files_endian.setText("Endian plików: " + dicomDataList.getFirst().getEndian());
             }
         }
 
@@ -329,7 +338,6 @@ public class WziZadanieController {
         slider3.valueProperty().removeListener(slider1ChangeListenerVoxel3);
 
 
-
         dicomDataList.clear();
 
         image1.setImage(null);
@@ -354,13 +362,291 @@ public class WziZadanieController {
 
             switch (selectedColormap) {
                 case "gray" -> setGrayLUT();
-                case "twilight " -> setTwilightLUT();
                 case "viridis" -> setViridisLUT();
                 case "inferno" -> setInfernoLUT();
                 case "ocean" -> setOceanLUT();
                 case "gist heist" -> setGistHeistLUT();
                 case "copper" -> setCopperLUT();
             }
+        }
+    }
+
+    @FXML
+    public void animationButton(ActionEvent actionEvent) {
+
+    }
+
+    @FXML
+    public void changeValueOfTreshHoldSlider(MouseEvent mouseEvent) {
+        int slider = (int) treshHoldSlider.getValue();
+        treshHold.setText(String.valueOf(slider));
+    }
+
+    @FXML
+    public void changeValueOfAnimationSlider(MouseEvent mouseEvent) {
+
+    }
+
+
+    public static class NumericStringComparator implements Comparator<String> {
+        @Override
+        public int compare(String s1, String s2) {
+            String[] parts1 = s1.split("(?<=\\D)(?=\\d)");
+            String[] parts2 = s2.split("(?<=\\D)(?=\\d)");
+
+            // Porównanie prefiksów (części nie-liczbowych) nazw plików
+            int prefixComparison = parts1[0].compareTo(parts2[0]);
+            if (prefixComparison != 0) {
+                return prefixComparison;
+            }
+
+            // Porównanie części liczbowych nazw plików jako liczby całkowite
+            int num1 = Integer.parseInt(parts1[1]);
+            int num2 = Integer.parseInt(parts2[1]);
+            return Integer.compare(num1, num2);
+        }
+    }
+
+    private void clearDrawingsLabelsAndImages() {
+        drawings.clearCanvasDrawing(draw1);
+        drawings.clearCanvasDrawing(draw2);
+        drawings.clearCanvasDrawing(draw3);
+        drawings.setupMouseEventsForDrawings(draw1, draw2, draw3);
+        drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, 0, 1);
+        drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, 0, 2);
+        drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, 0, 3);
+
+        labelPerimeterPixel.setVisible(false);
+        labelPerimeterVoxel.setVisible(false);
+        labelAreaVoxel.setVisible(false);
+        labelAreaPixel.setVisible(false);
+
+        areaVoxel.setText("");
+        areaPixel.setText("");
+        perimeterVoxel.setText("");
+        perimeterPixel.setText("");
+
+        ColorAdjust noEffect = new ColorAdjust();
+        image1.setEffect(noEffect);
+        image2.setEffect(noEffect);
+        image3.setEffect(noEffect);
+
+        brigthnessSlider.setValue(0);
+        brightness.setText(String.valueOf(0));
+        contrastSlider.setValue(0);
+        contrast.setText(String.valueOf(0));
+        windowValueSlider.setValue(0);
+        windowValueLabel.setText(String.valueOf(0));
+        levelValueSlider.setValue(0);
+        levelValueLabel.setText(String.valueOf(0));
+    }
+
+    private void showImageInFirstView(int indexOfFile, int windowValue, int levelValue) {
+        DICOMData dicomData = dicomDataList.get(indexOfFile);
+        int rows = dicomData.getRows();
+        int cols = dicomData.getColumns();
+
+        WritableImage image = new WritableImage(rows, cols);
+        for (int x = 0; x < rows; x++) {
+            for (int y = 0; y < cols; y++) {
+                char pixelColor = getPixelColor(x, y, indexOfFile, windowValue, levelValue);
+                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
+                image.getPixelWriter().setColor(x, y, color);
+            }
+        }
+        image = rotateImage(image);
+
+        image1.setImage(image);
+    }
+
+    private void showImageInSecondView(int slierValue, int windowValue, int levelValue) {
+        int rows = dicomDataList.getFirst().getRows();
+        int cols = dicomDataList.getFirst().getColumns();
+        int size = dicomDataList.size();
+
+        WritableImage image = new WritableImage(rows, cols);
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < cols; y++) {
+                char pixelColor = getPixelColor(slierValue, y, x, windowValue, levelValue);
+                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
+                image.getPixelWriter().setColor(y, size - 1 - x, color);
+            }
+        }
+
+        int newHeight = (int) ((float) size * dicomDataList.getFirst().getSliceThickness() / dicomDataList.getFirst().getPixelSpacing()[0]) + 2;
+        int newWidth = 580;
+        WritableImage scaledImage = new WritableImage(newWidth, newHeight);
+
+        PixelReader pixelReader = image.getPixelReader();
+
+        for (int newX = 0; newX < newWidth; newX++) {
+            for (int newY = 0; newY < newHeight; newY++) {
+                int originalX = (int) ((float) newX / newWidth * rows);
+                int originalY = (int) ((float) newY / newHeight * size);
+
+                Color color = pixelReader.getColor(originalX, originalY);
+                scaledImage.getPixelWriter().setColor(newX, newY, color);
+            }
+        }
+
+        image2.setImage(scaledImage);
+    }
+
+    private void showImageInThirdView(int slierValue, int windowValue, int levelValue) {
+        int rows = dicomDataList.getFirst().getRows();
+        int cols = dicomDataList.getFirst().getColumns();
+        int size = dicomDataList.size();
+
+        WritableImage image = new WritableImage(rows, cols);
+
+        for (int x = 0; x < size; x++) {
+            for (int y = 0; y < rows; y++) {
+                char pixelColor = getPixelColor(y, slierValue, x, windowValue, levelValue);
+                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
+                image.getPixelWriter().setColor(y, size - 1 - x, color);
+            }
+        }
+
+        int newHeight = (int) ((float) size * dicomDataList.getFirst().getSliceThickness() / dicomDataList.getFirst().getPixelSpacing()[1]) + 2;
+        int newWidth = 580;
+        WritableImage scaledImage = new WritableImage(newWidth, newHeight);
+
+        PixelReader pixelReader = image.getPixelReader();
+
+        for (int newX = 0; newX < newWidth; newX++) {
+            for (int newY = 0; newY < newHeight; newY++) {
+                int originalX = (int) ((float) newX / newWidth * rows);
+                int originalY = (int) ((float) newY / newHeight * size);
+
+                Color color = pixelReader.getColor(originalX, originalY);
+                scaledImage.getPixelWriter().setColor(newX, newY, color);
+            }
+        }
+
+        image3.setImage(scaledImage);
+    }
+
+    private void addListenerToSliders(Slider slider, Integer indexOfFunction) {
+        if (indexOfFunction == 1) {
+            slider1ChangeListener1 = (observable, oldValue, newValue) -> {
+                int index = newValue.intValue();
+                if (index >= 0) {
+                    showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+                }
+            };
+
+            slider.valueProperty().addListener(slider1ChangeListener1);
+        } else if (indexOfFunction == 2) {
+            slider1ChangeListener2 = (observable, oldValue, newValue) -> {
+                int index = newValue.intValue();
+                if (index >= 0) {
+                    showImageInSecondView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+                }
+            };
+
+            slider.valueProperty().addListener(slider1ChangeListener2);
+        } else if (indexOfFunction == 3) {
+            slider1ChangeListener3 = (observable, oldValue, newValue) -> {
+                int index = newValue.intValue();
+                if (index >= 0) {
+                    showImageInThirdView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+                }
+            };
+
+            slider.valueProperty().addListener(slider1ChangeListener3);
+        }
+    }
+
+    private void addListenersForVoxels() {
+        slider1ChangeListenerVoxel1 = (observable, oldValue, newValue) -> {
+            int index = newValue.intValue();
+            if (index >= 0) {
+                drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, index, 1);
+                Point3D point = drawings.getPoint3D();
+//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            }
+        };
+        slider1.valueProperty().addListener(slider1ChangeListenerVoxel1);
+
+        slider1ChangeListenerVoxel2 = (observable, oldValue, newValue) -> {
+            int index = newValue.intValue();
+            if (index >= 0) {
+                drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, index, 2);
+                Point3D point = drawings.getPoint3D();
+//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            }
+        };
+        slider2.valueProperty().addListener(slider1ChangeListenerVoxel2);
+
+        slider1ChangeListenerVoxel3 = (observable, oldValue, newValue) -> {
+            int index = newValue.intValue();
+            if (index >= 0) {
+                drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, index, 3);
+                Point3D point = drawings.getPoint3D();
+//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            }
+        };
+        slider3.valueProperty().addListener(slider1ChangeListenerVoxel3);
+    }
+
+    private void initializeSlidersAndLabels(Slider slider, Label valueSlider, int indexOfFunction) {
+        int valueOfSlider = (int) slider.getValue();
+        valueSlider.setText(String.valueOf(valueOfSlider));
+        addListenerToSliders(slider, indexOfFunction);
+    }
+
+    private void changeBCValues(Slider slider, Label label) {
+        int sliderValue = (int) slider.getValue();
+        label.setText(String.valueOf(sliderValue));
+
+        double brightnessValue = brigthnessSlider.getValue() / 100.0;
+        double contrastValue = contrastSlider.getValue() / 100.0;
+
+        ColorAdjust colorAdjust = new ColorAdjust();
+        colorAdjust.setBrightness(brightnessValue);
+        colorAdjust.setContrast(contrastValue);
+
+        image1.setEffect(colorAdjust);
+        image2.setEffect(colorAdjust);
+        image3.setEffect(colorAdjust);
+    }
+
+    private void setWindowAndLevelValues(int window, int sliderValue) {
+        int firstView = (int) slider1.getValue();
+        int secondView = (int) slider2.getValue();
+        int thirdView = (int) slider3.getValue();
+
+        showImageInFirstView(firstView, window, sliderValue);
+        showImageInSecondView(secondView, window, sliderValue);
+        showImageInThirdView(thirdView, window, sliderValue);
+    }
+
+    public char getPixelColor(int x, int y, int index, int windowValue, int levelValue) {
+        DICOMData dicomData = dicomDataList.get(index);
+        var pixelData = dicomData.getPixelData();
+        float value = pixelData[x][y] * dicomData.getRescaleSlope() + dicomData.getRescaleIntercept();
+        char yMin = 0;
+        char yMax = 255;
+        float center;
+        float width;
+
+        if (windowValue > 0 || levelValue > 0) {
+            center = windowValue;
+            width = levelValue;
+        } else {
+            center = dicomData.getWindowCenter() - 0.5f;
+            width = dicomData.getWindowWidth() - 1.0f;
+        }
+
+        if (value <= (center - width / 2.0f)) {
+            return yMin;
+        } else if (value > (center + width / 2.0f)) {
+            return yMax;
+        } else {
+            return (char) (((value - center) / width + 0.5f) * (yMax - yMin) + yMin);
         }
     }
 
@@ -543,42 +829,6 @@ public class WziZadanieController {
         }
     }
 
-    private void setTwilightLUT() {
-        resetToOriginalImages();
-
-        ImageView[] imageViews = {image1, image2, image3};
-        for (ImageView imageView : imageViews) {
-            Image image = imageView.getImage();
-            if (image != null) {
-                int width = (int) image.getWidth();
-                int height = (int) image.getHeight();
-
-                WritableImage newImage = new WritableImage(width, height);
-                PixelReader pixelReader = image.getPixelReader();
-                PixelWriter pixelWriter = newImage.getPixelWriter();
-
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        Color color = pixelReader.getColor(x, y);
-                        double grayValue = color.grayscale().getRed(); // Get grayscale value
-                        double value = grayValue;
-
-                        // Twilight colormap transformation
-                        double hue = 0.65 - value * 0.35; // Adjusted hue shift for Twilight-like colormap
-                        double saturation = 0.8 + 0.2 * value;
-                        double brightness = 0.6 + 0.4 * value;
-
-                        Color twilightColor = Color.hsb(hue * 360, saturation, brightness);
-
-                        pixelWriter.setColor(x, y, twilightColor);
-                    }
-                }
-
-                imageView.setImage(newImage);
-            }
-        }
-    }
-
     private void setGrayLUT() {
         resetToOriginalImages();
 
@@ -609,43 +859,6 @@ public class WziZadanieController {
         }
     }
 
-    @FXML
-    protected void synchronizeAction() {
-
-    }
-
-    @FXML
-    protected void rotateAction() {
-        Image[] images = {image1.getImage(), image2.getImage(), image3.getImage()};
-        for (Image image : images) {
-            if (image != null) {
-                int width = (int) image.getWidth();
-                int height = (int) image.getHeight();
-
-                WritableImage rotatedImage = new WritableImage(width, height);
-
-                PixelReader pixelReader = image.getPixelReader();
-                PixelWriter pixelWriter = rotatedImage.getPixelWriter();
-
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        Color color = pixelReader.getColor(x, y);
-
-                        pixelWriter.setColor(width - x - 1, height - y - 1, color);
-                    }
-                }
-
-                if (image == image1.getImage()) {
-                    image1.setImage(rotatedImage);
-                } else if (image == image2.getImage()) {
-                    image2.setImage(rotatedImage);
-                } else if (image == image3.getImage()) {
-                    image3.setImage(rotatedImage);
-                }
-            }
-        }
-    }
-
     // Metoda do obracania obrazu o 90 stopni w prawo (jeśli to konieczne)
     private WritableImage rotateImage(WritableImage image) {
         int width = (int) image.getWidth();
@@ -662,278 +875,5 @@ public class WziZadanieController {
         }
 
         return rotatedImage;
-    }
-
-    public static class NumericStringComparator implements Comparator<String> {
-        @Override
-        public int compare(String s1, String s2) {
-            String[] parts1 = s1.split("(?<=\\D)(?=\\d)");
-            String[] parts2 = s2.split("(?<=\\D)(?=\\d)");
-
-            // Porównanie prefiksów (części nie-liczbowych) nazw plików
-            int prefixComparison = parts1[0].compareTo(parts2[0]);
-            if (prefixComparison != 0) {
-                return prefixComparison;
-            }
-
-            // Porównanie części liczbowych nazw plików jako liczby całkowite
-            int num1 = Integer.parseInt(parts1[1]);
-            int num2 = Integer.parseInt(parts2[1]);
-            return Integer.compare(num1, num2);
-        }
-    }
-
-    private void clearDrawingsLabelsAndImages() {
-        drawings.clearCanvasDrawing(draw1);
-        drawings.clearCanvasDrawing(draw2);
-        drawings.clearCanvasDrawing(draw3);
-        drawings.setupMouseEventsForDrawings(draw1, draw2, draw3);
-        drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, 0, 1);
-        drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, 0, 2);
-        drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, 0, 3);
-
-        labelPerimeterPixel.setVisible(false);
-        labelPerimeterVoxel.setVisible(false);
-        labelAreaVoxel.setVisible(false);
-        labelAreaPixel.setVisible(false);
-
-        areaVoxel.setText("");
-        areaPixel.setText("");
-        perimeterVoxel.setText("");
-        perimeterPixel.setText("");
-
-        ColorAdjust noEffect = new ColorAdjust();
-        image1.setEffect(noEffect);
-        image2.setEffect(noEffect);
-        image3.setEffect(noEffect);
-
-        brigthnessSlider.setValue(0);
-        brightness.setText(String.valueOf(0));
-        contrastSlider.setValue(0);
-        contrast.setText(String.valueOf(0));
-        windowValueSlider.setValue(0);
-        windowValueLabel.setText(String.valueOf(0));
-        levelValueSlider.setValue(0);
-        levelValueLabel.setText(String.valueOf(0));
-    }
-
-    private void showImageInFirstView(int indexOfFile, int windowValue, int levelValue) {
-        DICOMData dicomData = dicomDataList.get(indexOfFile);
-        int rows = dicomData.getRows();
-        int cols = dicomData.getColumns();
-
-        WritableImage image = new WritableImage(rows, cols);
-
-        for (int x = 0; x < rows; x++) {
-            for (int y = 0; y < cols; y++) {
-                char pixelColor = getPixelColor(x, y, indexOfFile, windowValue, levelValue);
-                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
-                image.getPixelWriter().setColor(x, y, color);
-            }
-        }
-
-        image = rotateImage(image);
-
-        image1.setImage(image);
-    }
-
-    private void showImageInSecondView(int slierValue, int windowValue, int levelValue) {
-        int rows = dicomDataList.get(0).getRows();
-        int cols = dicomDataList.get(0).getColumns();
-        int size = dicomDataList.size();
-
-        WritableImage image = new WritableImage(rows, cols);
-
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < cols; y++) {
-                char pixelColor = getPixelColor(slierValue, y, x, windowValue, levelValue);
-                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
-                image.getPixelWriter().setColor(y, size - 1 - x, color);
-            }
-        }
-
-        int newHeight = (int) ((float) size * dicomDataList.get(0).getSliceThickness() / dicomDataList.get(0).getPixelSpacing()[0]) + 2;
-        int newWidth = 580;
-        WritableImage scaledImage = new WritableImage(newWidth, newHeight);
-
-        PixelReader pixelReader = image.getPixelReader();
-
-        for (int newX = 0; newX < newWidth; newX++) {
-            for (int newY = 0; newY < newHeight; newY++) {
-                int originalX = (int) ((float) newX / newWidth * rows);
-                int originalY = (int) ((float) newY / newHeight * size);
-
-                Color color = pixelReader.getColor(originalX, originalY);
-                scaledImage.getPixelWriter().setColor(newX, newY, color);
-            }
-        }
-
-        image2.setImage(scaledImage);
-    }
-
-    private void showImageInThirdView(int slierValue, int windowValue, int levelValue) {
-        int rows = dicomDataList.get(0).getRows();
-        int cols = dicomDataList.get(0).getColumns();
-        int size = dicomDataList.size();
-
-        WritableImage image = new WritableImage(rows, cols);
-
-        for (int x = 0; x < size; x++) {
-            for (int y = 0; y < rows; y++) {
-                char pixelColor = getPixelColor(y, slierValue, x, windowValue, levelValue);
-                Color color = Color.rgb(pixelColor, pixelColor, pixelColor);
-                image.getPixelWriter().setColor(y, size - 1 - x, color);
-            }
-        }
-
-        int newHeight = (int) ((float) size * dicomDataList.get(0).getSliceThickness() / dicomDataList.get(0).getPixelSpacing()[1]) + 2;
-        int newWidth = 580;
-        WritableImage scaledImage = new WritableImage(newWidth, newHeight);
-
-        PixelReader pixelReader = image.getPixelReader();
-
-        for (int newX = 0; newX < newWidth; newX++) {
-            for (int newY = 0; newY < newHeight; newY++) {
-                int originalX = (int) ((float) newX / newWidth * rows);
-                int originalY = (int) ((float) newY / newHeight * size);
-
-                Color color = pixelReader.getColor(originalX, originalY);
-                scaledImage.getPixelWriter().setColor(newX, newY, color);
-            }
-        }
-
-        image3.setImage(scaledImage);
-    }
-
-    private void addListenerToSliders(Slider slider, Integer indexOfFunction) {
-        if (indexOfFunction == 1) {
-            slider1ChangeListener1 = (observable, oldValue, newValue) -> {
-                int index = newValue.intValue();
-                if (index >= 0) {
-                    showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-                }
-            };
-
-            slider.valueProperty().addListener(slider1ChangeListener1);
-        } else if (indexOfFunction == 2) {
-            slider1ChangeListener2 = (observable, oldValue, newValue) -> {
-                int index = newValue.intValue();
-                if (index >= 0) {
-                    showImageInSecondView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-                }
-            };
-
-            slider.valueProperty().addListener(slider1ChangeListener2);
-        } else if (indexOfFunction == 3) {
-            slider1ChangeListener3 = (observable, oldValue, newValue) -> {
-                int index = newValue.intValue();
-                if (index >= 0) {
-                    showImageInThirdView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-                }
-            };
-
-            slider.valueProperty().addListener(slider1ChangeListener3);
-        }
-    }
-
-    private void addListenersForVoxels() {
-        slider1ChangeListenerVoxel1 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, index, 1);
-                Point3D point = drawings.getPoint3D();
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider1.valueProperty().addListener(slider1ChangeListenerVoxel1);
-
-        slider1ChangeListenerVoxel2 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, index, 2);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider2.valueProperty().addListener(slider1ChangeListenerVoxel2);
-
-        slider1ChangeListenerVoxel3 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, index, 3);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider3.valueProperty().addListener(slider1ChangeListenerVoxel3);
-    }
-
-    private void initializeSlidersAndLabels(Slider slider, Label valueSlider, int indexOfFunction) {
-        int valueOfSlider = (int) slider.getValue();
-        valueSlider.setText(String.valueOf(valueOfSlider));
-        addListenerToSliders(slider, indexOfFunction);
-    }
-
-    private void setEffects(ColorAdjust colorAdjust, double v, double v1) {
-        colorAdjust.setHue(v);
-        colorAdjust.setSaturation(v1);
-        image1.setEffect(colorAdjust);
-        image2.setEffect(colorAdjust);
-        image3.setEffect(colorAdjust);
-    }
-
-    private void changeBCValues(Slider slider, Label label) {
-        int sliderValue = (int) slider.getValue();
-        label.setText(String.valueOf(sliderValue));
-
-        double brightnessValue = brigthnessSlider.getValue() / 100.0;
-        double contrastValue = contrastSlider.getValue() / 100.0;
-
-        ColorAdjust colorAdjust = new ColorAdjust();
-        colorAdjust.setBrightness(brightnessValue);
-        colorAdjust.setContrast(contrastValue);
-
-        image1.setEffect(colorAdjust);
-        image2.setEffect(colorAdjust);
-        image3.setEffect(colorAdjust);
-    }
-
-    private void setWindowAndLevelValues(int window, int sliderValue) {
-        int firstView = (int) slider1.getValue();
-        int secondView = (int) slider2.getValue();
-        int thirdView = (int) slider3.getValue();
-
-        showImageInFirstView(firstView, window, sliderValue);
-        showImageInSecondView(secondView, window, sliderValue);
-        showImageInThirdView(thirdView, window, sliderValue);
-    }
-
-    public char getPixelColor(int x, int y, int index, int windowValue, int levelValue) {
-        DICOMData dicomData = dicomDataList.get(index);
-        var pixelData = dicomData.getPixelData();
-        float value = pixelData[x][y] * dicomData.getRescaleSlope() + dicomData.getRescaleIntercept();
-        char yMin = 0;
-        char yMax = 255;
-        float center;
-        float width;
-
-        if (windowValue > 0 || levelValue > 0) {
-            center = windowValue;
-            width = levelValue;
-        } else {
-            center = dicomData.getWindowCenter() - 0.5f;
-            width = dicomData.getWindowWidth() - 1.0f;
-        }
-
-        if (value <= (center - width / 2.0f)) {
-            return yMin;
-        } else if (value > (center + width / 2.0f)) {
-            return yMax;
-        } else {
-            return (char) (((value - center) / width + 0.5f) * (yMax - yMin) + yMin);
-        }
     }
 }
