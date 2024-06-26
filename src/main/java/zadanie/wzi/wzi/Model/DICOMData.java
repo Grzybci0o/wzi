@@ -155,4 +155,12 @@ public class DICOMData {
         this.windowWidth = windowWidth;
     }
 
+    public void setPixelGreen(int x, int y) {
+        if (x >= 0 && x < this.columns && y >= 0 && y < this.rows) {
+            this.pixelData[y][x] = 100210;
+        } else {
+            System.out.println("Coordinates (" + x + ", " + y + ") are out of bounds.");
+        }
+    }
+
 }

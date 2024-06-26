@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
@@ -27,16 +26,13 @@
       <Slider fx:id="slider3" layoutX="800.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider3" prefHeight="14.0" prefWidth="250.0" />
       <Slider fx:id="slider2" layoutX="505.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider2" prefHeight="14.0" prefWidth="250.0" />
       <StackPane fx:id="drawing1" layoutX="205.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
-         <ImageView fx:id="image1" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
-         <Canvas fx:id="draw1" height="250.0" width="250.0" />
+         <ImageView fx:id="image1" fitHeight="250.0" fitWidth="250.0" onMouseClicked="#imgae1Clicked" pickOnBounds="true" preserveRatio="true" />
       </StackPane>
       <StackPane fx:id="drawing2" layoutX="505.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
-         <ImageView fx:id="image2" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
-         <Canvas fx:id="draw2" height="250.0" width="250.0" />
+         <ImageView fx:id="image2" fitHeight="250.0" fitWidth="250.0" onMouseClicked="#imgae2Clicked" pickOnBounds="true" preserveRatio="true" />
       </StackPane>
       <StackPane fx:id="drawing3" layoutX="805.0" layoutY="35.0" style="-fx-border-color: black; -fx-border-image-width: 20px;">
-         <ImageView fx:id="image3" fitHeight="250.0" fitWidth="250.0" pickOnBounds="true" preserveRatio="true" />
-         <Canvas fx:id="draw3" height="250.0" width="250.0" />
+         <ImageView fx:id="image3" fitHeight="250.0" fitWidth="250.0" onMouseClicked="#imgae3Clicked" pickOnBounds="true" preserveRatio="true" />
       </StackPane>
       <Label fx:id="plik" layoutX="16.0" layoutY="14.0" prefHeight="17.0" prefWidth="159.0" />
       <Slider fx:id="contrastSlider" layoutX="505.0" layoutY="361.0" onMouseDragged="#changeValueOfContrastSlider" prefHeight="14.0" prefWidth="250.0" />

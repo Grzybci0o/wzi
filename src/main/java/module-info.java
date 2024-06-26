@@ -9,6 +9,7 @@ module zadanie.wzi.wzi {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires java.desktop;
 
     opens zadanie.wzi.wzi to javafx.fxml;
     exports zadanie.wzi.wzi;

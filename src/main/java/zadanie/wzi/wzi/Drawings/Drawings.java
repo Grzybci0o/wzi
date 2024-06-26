@@ -1,5 +1,6 @@
 package zadanie.wzi.wzi.Drawings;
 
+import javafx.geometry.Point2D;
 import javafx.geometry.Point3D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -11,6 +12,7 @@ import java.util.List;
 public class Drawings {
 
     List<double[]> polygonPoints = new ArrayList<>();
+    List<Point2D> voxelPoints = new ArrayList<>();
 
     boolean polygonClosed;
     boolean polygonSelected;
@@ -45,7 +47,8 @@ public class Drawings {
                     double y = event.getY();
 
                     point3D = new Point3D(x, y, sliceIndex);
-                    System.out.println(point3D);
+
+                    voxelPoints.add(new Point2D(x,y));
 
                     gc.setFill(Color.RED);
                     gc.fillOval(x - 2, y - 2, 4, 4);
@@ -68,7 +71,6 @@ public class Drawings {
                     double y = event.getY();
 
                     point3D = new Point3D(x, y, sliceIndex);
-                    System.out.println(point3D);
 
                     gc.setFill(Color.RED);
                     gc.fillOval(x - 2, y - 2, 4, 4);
@@ -90,7 +92,6 @@ public class Drawings {
                     double y = event.getY();
 
                     point3D = new Point3D(x, y, sliceIndex);
-                    System.out.println(point3D);
 
                     gc.setFill(Color.RED);
                     gc.fillOval(x - 2, y - 2, 4, 4);
@@ -112,7 +113,6 @@ public class Drawings {
                 double x = event.getX();
                 double y = event.getY();
                 addPointsToList(x, y);
-                System.out.println(x);
                 gc.setFill(Color.RED);
                 gc.fillOval(x - 2, y - 2, 4, 4);
 
@@ -229,5 +229,13 @@ public class Drawings {
 
     public Point3D getPoint3D() {
         return point3D;
+    }
+
+    public List<Point2D> getVoxelPoints() {
+        return voxelPoints;
+    }
+
+    public void setVoxelPoints(List<Point2D> voxelPoints) {
+        this.voxelPoints = voxelPoints;
     }
 }

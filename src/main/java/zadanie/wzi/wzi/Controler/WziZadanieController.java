@@ -3,10 +3,10 @@ package zadanie.wzi.wzi.Controler;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.geometry.Point3D;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
@@ -103,24 +103,17 @@ public class WziZadanieController {
     @FXML
     CheckBox rotate;
 
-    @FXML
-    Canvas draw1;
-    @FXML
-    Canvas draw2;
-    @FXML
-    Canvas draw3;
-
     Drawings drawings = new Drawings();
 
     List<DICOMData> dicomDataList = new ArrayList<>();
 
+    List<Point3D> point2DListForImage1 = new ArrayList<>();
+    List<Point3D> point2DListForImage2 = new ArrayList<>();
+    List<Point3D> point2DListForImage3 = new ArrayList<>();
+
     private ChangeListener<Number> slider1ChangeListener1;
     private ChangeListener<Number> slider1ChangeListener2;
     private ChangeListener<Number> slider1ChangeListener3;
-
-    private ChangeListener<Number> slider1ChangeListenerVoxel1;
-    private ChangeListener<Number> slider1ChangeListenerVoxel2;
-    private ChangeListener<Number> slider1ChangeListenerVoxel3;
 
     private Image originalImage1;
     private Image originalImage2;
@@ -207,6 +200,7 @@ public class WziZadanieController {
                     parser.parseDICOM(file);
 
                     DICOMData dicomData = parser.dicomData;
+                    //Tutaj rysowanko musi być
                     dicomDataList.add(dicomData);
                 }
 
@@ -233,64 +227,38 @@ public class WziZadanieController {
         int windowValue = (int) windowValueSlider.getValue();
         int levelValue = (int) levelValueSlider.getValue();
         if (voxel.isSelected()) {
-            addListenersForVoxels();
-            drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, 0, 1);
-            slider2.setValue(0);
-            slider3.setValue(0);
-            showImageInSecondView(0, windowValue, levelValue);
-            showImageInThirdView(0, windowValue, levelValue);
-            drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, 0, 2);
-            drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, 0, 3);
-
-            drawings.setVoxelSelected(true);
-        } else {
-            drawings.setVoxelSelected(false);
         }
     }
 
     @FXML
     protected void polygonAction() {
-        if (polygon.isSelected() &&
-                (image1.getImage() != null || image2.getImage() != null || image3.getImage() != null)) {
-            drawings.setupMouseEventsForDrawings(draw1, draw2, draw3);
-            drawings.setPolygonSelected(true);
-        } else {
-            drawings.setPolygonSelected(false);
-        }
+
     }
 
     @FXML
     protected void areaAction() {
         if (!dicomDataList.isEmpty()) {
-            if (drawings.isPolygonClosed()) {
                 labelAreaPixel.setVisible(true);
                 labelAreaVoxel.setVisible(true);
                 labelPerimeterPixel.setVisible(true);
                 labelPerimeterVoxel.setVisible(true);
 
-                double areaInPixels = drawings.calculatePolygonAreaInPixels();
-                double areaInVoxels = drawings.calculatePolygonAreaInVoxels();
+                double areaInPixels = calculateAreaInVoxels(point2DListForImage1);
+                double areaInVoxels = calculateSurfaceArea(point2DListForImage1);
 
-                double perimeterInPixels = drawings.calculatePerimeterInPixels();
-                double perimeterInVoxels = drawings.calculatePerimeterInVoxels();
+                double perimeterInPixels = calculatePerimeter(point2DListForImage1);
+                double perimeterInVoxels = calculatePerimeterInVoxels(point2DListForImage1);
 
-                areaPixel.setText(areaInPixels + " pixeli");
-                areaVoxel.setText(areaInVoxels + " voxeli");
+                areaPixel.setText(String.format("%.2f pixeli", areaInPixels));
+                areaVoxel.setText(String.format("%.2f voxeli", areaInVoxels));
 
-                perimeterPixel.setText(perimeterInPixels + " pixeli");
-                perimeterVoxel.setText(perimeterInVoxels + " voxeli");
+                perimeterPixel.setText(String.format("%.2f pixeli", perimeterInPixels));
+                perimeterVoxel.setText(String.format("%.2f voxeli", perimeterInVoxels));
 
                 var pixels = drawings.getPolygonPointsList();
                 for (double[] pixel : pixels) {
                     System.out.println(pixel[0] + " " + pixel[1]);
                 }
-            } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Błąd!");
-                alert.setHeaderText("Niezamknięty wielokąt!");
-                alert.setContentText("Proszę zamknąć wielokąt! (PPM - prawy przycisk myszy)");
-                alert.showAndWait();
-            }
         } else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Błąd!");
@@ -324,18 +292,11 @@ public class WziZadanieController {
         slider2.valueProperty().removeListener(slider1ChangeListener2);
         slider3.valueProperty().removeListener(slider1ChangeListener3);
 
-        slider1.valueProperty().removeListener(slider1ChangeListenerVoxel1);
-        slider2.valueProperty().removeListener(slider1ChangeListenerVoxel2);
-        slider3.valueProperty().removeListener(slider1ChangeListenerVoxel3);
-
-
-
         dicomDataList.clear();
 
         image1.setImage(null);
         image2.setImage(null);
         image3.setImage(null);
-
 
         clearDrawingsLabelsAndImages();
     }
@@ -352,15 +313,19 @@ public class WziZadanieController {
             colorAdjust.setBrightness(brightnessValue);
             colorAdjust.setContrast(contrastValue);
 
-            switch (selectedColormap) {
-                case "gray" -> setGrayLUT();
-                case "twilight " -> setTwilightLUT();
-                case "viridis" -> setViridisLUT();
-                case "inferno" -> setInfernoLUT();
-                case "ocean" -> setOceanLUT();
-                case "gist heist" -> setGistHeistLUT();
-                case "copper" -> setCopperLUT();
-            }
+            SwtichLUT(selectedColormap);
+        }
+    }
+
+    private void SwtichLUT(String selectedColormap) {
+        switch (selectedColormap) {
+            case "gray" -> setGrayLUT();
+            case "twilight " -> setTwilightLUT();
+            case "viridis" -> setViridisLUT();
+            case "inferno" -> setInfernoLUT();
+            case "ocean" -> setOceanLUT();
+            case "gist heist" -> setGistHeistLUT();
+            case "copper" -> setCopperLUT();
         }
     }
 
@@ -561,12 +526,11 @@ public class WziZadanieController {
                     for (int x = 0; x < width; x++) {
                         Color color = pixelReader.getColor(x, y);
                         double grayValue = color.grayscale().getRed(); // Get grayscale value
-                        double value = grayValue;
 
                         // Twilight colormap transformation
-                        double hue = 0.65 - value * 0.35; // Adjusted hue shift for Twilight-like colormap
-                        double saturation = 0.8 + 0.2 * value;
-                        double brightness = 0.6 + 0.4 * value;
+                        double hue = 0.65 - grayValue * 0.35; // Adjusted hue shift for Twilight-like colormap
+                        double saturation = 0.8 + 0.2 * grayValue;
+                        double brightness = 0.6 + 0.4 * grayValue;
 
                         Color twilightColor = Color.hsb(hue * 360, saturation, brightness);
 
@@ -646,22 +610,105 @@ public class WziZadanieController {
         }
     }
 
-    // Metoda do obracania obrazu o 90 stopni w prawo (jeśli to konieczne)
-    private WritableImage rotateImage(WritableImage image) {
-        int width = (int) image.getWidth();
-        int height = (int) image.getHeight();
 
-        WritableImage rotatedImage = new WritableImage(height, width);
-        PixelWriter rotatedPixelWriter = rotatedImage.getPixelWriter();
+    @FXML
+    public void imgae1Clicked(MouseEvent mouseEvent) {
+        int size = dicomDataList.size();
+        int index = (int) slider1.getValue();
+        DICOMData dicom = dicomDataList.get(index);
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                javafx.scene.paint.Color color = image.getPixelReader().getColor(x, y);
-                rotatedPixelWriter.setColor(height - y - 1, x, color);
+        int x = (int) mouseEvent.getX();
+        int y = (int) mouseEvent.getY();
+
+        point2DListForImage1.add(new Point3D(x, y, (int) slider1.getValue()));
+        for (int test = 1; test < size; test++)
+            for (Point3D point : point2DListForImage1) {
+                if (test >= point.getZ() - 1 && test <= point.getZ() + 1) {
+                    for (int i = (int) point.getX() - 5; i <= point.getX() + 5; i++) {
+                        for (int j = (int) point.getY() - 5; j <= point.getY() + 5; j++) {
+                            dicom.setPixelGreen(i, j);
+                        }
+                    }
+                }
             }
-        }
 
-        return rotatedImage;
+        showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+        slider2.setValue(x);
+        valueSlider2.setText(String.valueOf((int) slider2.getValue()));
+        showImageInSecondView(x, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+        slider3.setValue(y);
+        valueSlider3.setText(String.valueOf((int) slider2.getValue()));
+        showImageInThirdView(y, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+    }
+
+    @FXML
+    public void imgae2Clicked(MouseEvent mouseEvent) {
+        int size = dicomDataList.size();
+        int index = (int) slider2.getValue();
+
+        int x = (int) mouseEvent.getX();
+        int y = (int) mouseEvent.getY();
+
+        DICOMData dicom = dicomDataList.get(y);
+
+        point2DListForImage2.add(new Point3D(x, y, index));
+        for (int test = 1; test < size; test++)
+            for (Point3D point : point2DListForImage2) {
+                if (test >= point.getZ() - 1 && test <= point.getZ() + 1) {
+                    for (int i = (int) point.getX() - 5; i <= point.getX() + 5; i++) {
+                        for (int j = index - 5; j <= index + 5; j++) {
+                            dicom.setPixelGreen(i, j);
+                        }
+                    }
+                }
+            }
+
+        showImageInSecondView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+        slider1.setValue(y);
+        valueSlider1.setText(String.valueOf((int) slider1.getValue()));
+        showImageInFirstView(size - y, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+        slider3.setValue(index);
+        valueSlider3.setText(String.valueOf(index));
+        showImageInThirdView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+    }
+
+    @FXML
+    public void imgae3Clicked(MouseEvent mouseEvent) {
+        int size = dicomDataList.size();
+        int index = (int) slider3.getValue();
+
+        int x = (int) mouseEvent.getX();
+        int y = (int) mouseEvent.getY();
+
+        DICOMData dicom = dicomDataList.get(y);
+
+        point2DListForImage3.add(new Point3D(x, y, index));
+        for (int test = 1; test < size; test++)
+            for (Point3D point : point2DListForImage3) {
+                if (test >= point.getZ() - 1 && test <= point.getZ() + 1) {
+                    for (int i = index - 5; i <= index + 5; i++) {
+                        for (int j = (int) point.getY() - 5; j <= (int) point.getY() + 5; j++) {
+                            dicom.setPixelGreen(i, j);
+                        }
+                    }
+                }
+            }
+
+        showImageInThirdView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+
+        slider1.setValue(y);
+        valueSlider1.setText(String.valueOf((int) slider1.getValue()));
+        showImageInFirstView(y, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+
+        slider2.setValue(index);
+        valueSlider2.setText(String.valueOf(index));
+        showImageInSecondView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
     }
 
     public static class NumericStringComparator implements Comparator<String> {
@@ -683,15 +730,25 @@ public class WziZadanieController {
         }
     }
 
-    private void clearDrawingsLabelsAndImages() {
-        drawings.clearCanvasDrawing(draw1);
-        drawings.clearCanvasDrawing(draw2);
-        drawings.clearCanvasDrawing(draw3);
-        drawings.setupMouseEventsForDrawings(draw1, draw2, draw3);
-        drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, 0, 1);
-        drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, 0, 2);
-        drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, 0, 3);
+    // Metoda do obracania obrazu o 90 stopni w prawo (jeśli to konieczne)
+    private WritableImage rotateImage(WritableImage image) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
 
+        WritableImage rotatedImage = new WritableImage(height, width);
+        PixelWriter rotatedPixelWriter = rotatedImage.getPixelWriter();
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                javafx.scene.paint.Color color = image.getPixelReader().getColor(x, y);
+                rotatedPixelWriter.setColor(height - y - 1, x, color);
+            }
+        }
+
+        return rotatedImage;
+    }
+
+    private void clearDrawingsLabelsAndImages() {
         labelPerimeterPixel.setVisible(false);
         labelPerimeterVoxel.setVisible(false);
         labelAreaVoxel.setVisible(false);
@@ -715,6 +772,77 @@ public class WziZadanieController {
         windowValueLabel.setText(String.valueOf(0));
         levelValueSlider.setValue(0);
         levelValueLabel.setText(String.valueOf(0));
+    }
+
+    public Double calculateAreaInVoxels(List < Point3D > points) {
+        if (points.size() < 3) {
+            return 0.0;
+        }
+
+        // Przeliczenie pixelSpacing na rozmiar wokseli w odpowiednich wymiarach
+        float pixelSizeX = dicomDataList.get(0).getPixelSpacing()[0];
+        float pixelSizeY = dicomDataList.get(0).getPixelSpacing()[1];
+        float voxelSizeZ = dicomDataList.get(0).getSliceThickness();
+
+        double area = calculateSurfaceArea(points);
+
+        // Obliczenie pola powierzchni w wokselach
+        double areaX = area * (pixelSizeX / 2 * pixelSizeY / 2);
+        double areaY = area * (pixelSizeX / 2 * voxelSizeZ / 2);
+        double areaZ = area * (pixelSizeY / 2 * voxelSizeZ / 2);
+
+        // Zwrócenie pola powierzchni w wokselach
+        return (areaX + areaY + areaZ) / 6.0;
+    }
+
+    private double calculateSurfaceArea(List<Point3D> points) {
+        if (points == null || points.size() < 3) {
+            throw new IllegalArgumentException("There must be at least 3 points to form a polygon");
+        }
+
+        double area = 0;
+        int n = points.size();
+        for (int i = 0; i < n; i++) {
+            Point3D current = points.get(i);
+            Point3D next = points.get((i + 1) % n);
+
+            double x1 = current.getX();
+            double y1 = current.getY();
+            double x2 = next.getX();
+            double y2 = next.getY();
+
+            area += (x1 * y2 - x2 * y1);
+        }
+
+        return Math.abs(area) / 2.0;
+    }
+
+    public double calculatePerimeterInVoxels(List < Point3D > points) {
+        // Przeliczenie pixelSpacing na rozmiar wokseli w odpowiednich wymiarach
+        float pixelSizeX = dicomDataList.get(0).getPixelSpacing()[0];
+        float pixelSizeY = dicomDataList.get(0).getPixelSpacing()[1];
+        float voxelSizeZ = dicomDataList.get(0).getSliceThickness();
+
+        double perimeter = calculatePerimeter(points);
+
+        // Obliczenie obwodu w wokselach
+        double perimeterX = perimeter * pixelSizeX / 2;
+        double perimeterY = perimeter * pixelSizeY / 2;
+        double perimeterZ = perimeter * voxelSizeZ / 2;
+
+        // Zwrócenie obwodu w wokselach
+        return (perimeterX + perimeterY + perimeterZ) / 6.0;
+    }
+
+    //w pikselach
+    public double calculatePerimeter(List < Point3D > points) {
+        double perimeter = 0.0;
+        for (int i = 0; i < points.size(); i++) {
+            Point3D current = points.get(i);
+            Point3D next = points.get((i + 1) % points.size());
+            perimeter += Math.sqrt(Math.pow(current.getX() - next.getX(), 2) + Math.pow(current.getY() - next.getY(), 2) + Math.pow(current.getZ() - next.getZ(), 2));
+        }
+        return perimeter;
     }
 
     private void showImageInFirstView(int indexOfFile, int windowValue, int levelValue) {
@@ -836,53 +964,10 @@ public class WziZadanieController {
         }
     }
 
-    private void addListenersForVoxels() {
-        slider1ChangeListenerVoxel1 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, index, 1);
-                Point3D point = drawings.getPoint3D();
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider1.valueProperty().addListener(slider1ChangeListenerVoxel1);
-
-        slider1ChangeListenerVoxel2 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, index, 2);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider2.valueProperty().addListener(slider1ChangeListenerVoxel2);
-
-        slider1ChangeListenerVoxel3 = (observable, oldValue, newValue) -> {
-            int index = newValue.intValue();
-            if (index >= 0) {
-                drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, index, 3);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-            }
-        };
-        slider3.valueProperty().addListener(slider1ChangeListenerVoxel3);
-    }
-
     private void initializeSlidersAndLabels(Slider slider, Label valueSlider, int indexOfFunction) {
         int valueOfSlider = (int) slider.getValue();
         valueSlider.setText(String.valueOf(valueOfSlider));
         addListenerToSliders(slider, indexOfFunction);
-    }
-
-    private void setEffects(ColorAdjust colorAdjust, double v, double v1) {
-        colorAdjust.setHue(v);
-        colorAdjust.setSaturation(v1);
-        image1.setEffect(colorAdjust);
-        image2.setEffect(colorAdjust);
-        image3.setEffect(colorAdjust);
     }
 
     private void changeBCValues(Slider slider, Label label) {
