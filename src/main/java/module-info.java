@@ -9,6 +9,7 @@ module zadanie.wzi.wzi {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires java.desktop;
 
     opens zadanie.wzi.wzi to javafx.fxml;
     exports zadanie.wzi.wzi;
@@ -22,4 +23,6 @@ module zadanie.wzi.wzi {
     opens zadanie.wzi.wzi.Drawings to javafx.fxml;
     exports zadanie.wzi.wzi.Model;
     opens zadanie.wzi.wzi.Model to javafx.fxml;
+//    exports zadanie.wzi.wzi.Animation;
+//    opens zadanie.wzi.wzi.Animation to javafx.fxml;
 }

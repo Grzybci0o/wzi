@@ -1,9 +1,7 @@
 package zadanie.wzi.wzi.Controler;
 
 import javafx.beans.value.ChangeListener;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.geometry.Point3D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
@@ -23,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 public class WziZadanieController {
 
@@ -63,7 +63,7 @@ public class WziZadanieController {
     @FXML
     Label files_endian;
     @FXML
-    Label treshHold;
+    Label tresHold;
 
 
     @FXML
@@ -81,7 +81,9 @@ public class WziZadanieController {
     @FXML
     Slider levelValueSlider;
     @FXML
-    Slider treshHoldSlider;
+    Slider tresHoldSlider;
+    @FXML
+    Slider animationSlider;
 
     @FXML
     ComboBox<String> colors;
@@ -106,6 +108,13 @@ public class WziZadanieController {
     CheckBox polygon;
     @FXML
     CheckBox voxel;
+    @FXML
+    CheckBox none;
+
+    @FXML
+    RadioButton under;
+    @FXML
+    RadioButton over;
 
     @FXML
     Canvas draw1;
@@ -117,10 +126,13 @@ public class WziZadanieController {
     Drawings drawings = new Drawings();
 
     List<DICOMData> dicomDataList = new ArrayList<>();
+    final List<WritableImage> images3d1 = new ArrayList<>();
 
     private ChangeListener<Number> slider1ChangeListener1;
     private ChangeListener<Number> slider1ChangeListener2;
     private ChangeListener<Number> slider1ChangeListener3;
+
+    private ChangeListener<Number> animationChangeListener;
 
     private ChangeListener<Number> slider1ChangeListenerVoxel1;
     private ChangeListener<Number> slider1ChangeListenerVoxel2;
@@ -333,6 +345,8 @@ public class WziZadanieController {
         slider2.valueProperty().removeListener(slider1ChangeListener2);
         slider3.valueProperty().removeListener(slider1ChangeListener3);
 
+        animationSlider.valueProperty().removeListener(animationChangeListener);
+
         slider1.valueProperty().removeListener(slider1ChangeListenerVoxel1);
         slider2.valueProperty().removeListener(slider1ChangeListenerVoxel2);
         slider3.valueProperty().removeListener(slider1ChangeListenerVoxel3);
@@ -370,23 +384,6 @@ public class WziZadanieController {
             }
         }
     }
-
-    @FXML
-    public void animationButton(ActionEvent actionEvent) {
-
-    }
-
-    @FXML
-    public void changeValueOfTreshHoldSlider(MouseEvent mouseEvent) {
-        int slider = (int) treshHoldSlider.getValue();
-        treshHold.setText(String.valueOf(slider));
-    }
-
-    @FXML
-    public void changeValueOfAnimationSlider(MouseEvent mouseEvent) {
-
-    }
-
 
     public static class NumericStringComparator implements Comparator<String> {
         @Override
@@ -454,7 +451,7 @@ public class WziZadanieController {
                 image.getPixelWriter().setColor(x, y, color);
             }
         }
-        image = rotateImage(image);
+        image = rotateImage(image, 1);
 
         image1.setImage(image);
     }
@@ -528,7 +525,7 @@ public class WziZadanieController {
 
     private void addListenerToSliders(Slider slider, Integer indexOfFunction) {
         if (indexOfFunction == 1) {
-            slider1ChangeListener1 = (observable, oldValue, newValue) -> {
+            slider1ChangeListener1 = (_, _, newValue) -> {
                 int index = newValue.intValue();
                 if (index >= 0) {
                     showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
@@ -537,7 +534,7 @@ public class WziZadanieController {
 
             slider.valueProperty().addListener(slider1ChangeListener1);
         } else if (indexOfFunction == 2) {
-            slider1ChangeListener2 = (observable, oldValue, newValue) -> {
+            slider1ChangeListener2 = (_, _, newValue) -> {
                 int index = newValue.intValue();
                 if (index >= 0) {
                     showImageInSecondView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
@@ -546,7 +543,7 @@ public class WziZadanieController {
 
             slider.valueProperty().addListener(slider1ChangeListener2);
         } else if (indexOfFunction == 3) {
-            slider1ChangeListener3 = (observable, oldValue, newValue) -> {
+            slider1ChangeListener3 = (_, _, newValue) -> {
                 int index = newValue.intValue();
                 if (index >= 0) {
                     showImageInThirdView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
@@ -558,35 +555,26 @@ public class WziZadanieController {
     }
 
     private void addListenersForVoxels() {
-        slider1ChangeListenerVoxel1 = (observable, oldValue, newValue) -> {
+        slider1ChangeListenerVoxel1 = (_, _, newValue) -> {
             int index = newValue.intValue();
             if (index >= 0) {
                 drawings.setupMouseEventForVoxelDrawing(draw1, draw2, draw3, index, 1);
-                Point3D point = drawings.getPoint3D();
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
             }
         };
         slider1.valueProperty().addListener(slider1ChangeListenerVoxel1);
 
-        slider1ChangeListenerVoxel2 = (observable, oldValue, newValue) -> {
+        slider1ChangeListenerVoxel2 = (_, _, newValue) -> {
             int index = newValue.intValue();
             if (index >= 0) {
                 drawings.setupMouseEventForVoxelDrawing(draw2, draw1, draw3, index, 2);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInThirdView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
             }
         };
         slider2.valueProperty().addListener(slider1ChangeListenerVoxel2);
 
-        slider1ChangeListenerVoxel3 = (observable, oldValue, newValue) -> {
+        slider1ChangeListenerVoxel3 = (_, _, newValue) -> {
             int index = newValue.intValue();
             if (index >= 0) {
                 drawings.setupMouseEventForVoxelDrawing(draw3, draw1, draw2, index, 3);
-                Point3D point = drawings.getPoint3D();
-//                showImageInFirstView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
-//                showImageInSecondView(, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
             }
         };
         slider3.valueProperty().addListener(slider1ChangeListenerVoxel3);
@@ -764,7 +752,7 @@ public class WziZadanieController {
     }
 
     private void setInfernoLUT() {
-        resetToOriginalImages();
+//        resetToOriginalImages();
 
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
@@ -860,20 +848,209 @@ public class WziZadanieController {
     }
 
     // Metoda do obracania obrazu o 90 stopni w prawo (jeśli to konieczne)
-    private WritableImage rotateImage(WritableImage image) {
+    private WritableImage rotateImage(WritableImage image, int rotationMode) {
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();
 
         WritableImage rotatedImage = new WritableImage(height, width);
         PixelWriter rotatedPixelWriter = rotatedImage.getPixelWriter();
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                javafx.scene.paint.Color color = image.getPixelReader().getColor(x, y);
-                rotatedPixelWriter.setColor(height - y - 1, x, color);
+        if (rotationMode == 1) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    javafx.scene.paint.Color color = image.getPixelReader().getColor(x, y);
+                    rotatedPixelWriter.setColor(height - y - 1, x, color);
+                }
+            }
+        } else if (rotationMode == 2) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    javafx.scene.paint.Color color = image.getPixelReader().getColor(x, y);
+                    rotatedPixelWriter.setColor(y, width - x - 1, color);
+                }
             }
         }
 
         return rotatedImage;
+    }
+
+    /**
+     *
+     * zadanie 2
+     *
+     * */
+
+    @FXML
+    public void animationButton() {
+        images3d1.clear();
+
+        String mode = modes.getValue();
+        int window = (int) windowValueSlider.getValue();
+        int center = (int) levelValueSlider.getValue();
+        int tresHold = (int) tresHoldSlider.getValue();
+        int animation = (int) animationSlider.getValue();
+
+        parallelModel(mode, window, center, tresHold);
+        showAnimationModelInSecondView(animation);
+        image3.setImage(images3d1.getLast());
+    }
+
+    private void parallelModel(String mode, int window, int center, int tresHold) {
+        int size = dicomDataList.size();
+        int rows = dicomDataList.getFirst().getRows();
+
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(availableProcessors);
+
+        ForkJoinTask<?> task = forkJoinPool.submit(() -> IntStream.range(0, 360).parallel().forEach(angle -> {
+            if (angle % 10 == 0) {
+                animationInFirstView(angle, mode, window, center, tresHold, rows, size);
+            }
+        }));
+
+        forkJoinPool.shutdown();
+        try {
+            forkJoinPool.awaitTermination(300, TimeUnit.SECONDS);
+            task.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void animationInFirstView(int angle, String mode, int window, int centre, int tres, int rows, int cols) {
+        WritableImage image = new WritableImage(cols, rows);
+
+        dicomDataList.parallelStream().forEach(dicom -> {
+            int index = dicomDataList.indexOf(dicom);
+
+            IntStream.range(0, rows).parallel().forEach(x -> {
+                int sum = 0;
+                int max = 0;
+                int firsthit = 0;
+                int number = 0;
+
+                for (int i = 0; i < 512; ++i) {
+                    double x_rot = (x - rows / 2) * Math.cos(Math.toRadians(angle)) - (i - 512 / 2) * Math.sin(Math.toRadians(angle)) + rows / 2;
+                    double y_rot = (x - rows / 2) * Math.sin(Math.toRadians(angle)) + (i - 512 / 2) * Math.cos(Math.toRadians(angle)) + 512 / 2;
+
+                    int x_int = (int) Math.round(x_rot);
+                    int y_int = (int) Math.round(y_rot);
+
+                    if (x_int >= 0 && x_int < rows && y_int >= 0 && y_int < 512) {
+                        char value = getPixelColor(x_int, y_int, index, window, centre);
+
+                        if (value < 255) {
+                            sum += value;
+                            number++;
+                        }
+                        if (value > max && value < 255) {
+                            max = value;
+                        }
+                        if (value >= tres && value < 255 && mode.equals("firsthit")) {
+                            firsthit = value;
+                            break;
+                        }
+                    }
+                }
+
+                char finalValue = 0;
+                if (mode.equals("avg") && number > 0) {
+                    double average = (double) sum / number;
+                    finalValue = (char) average;
+                } else if (mode.equals("max")) {
+                    finalValue = (char) max;
+                } else if (mode.equals("firsthit")) {
+                    finalValue = (char) firsthit;
+                }
+
+                Color color = Color.rgb(finalValue, finalValue, finalValue);
+                image.getPixelWriter().setColor(index, x, color);
+            });
+        });
+
+        scaleImage(image, image1, image1.getImage().getWidth(), image1.getImage().getHeight(), true);
+    }
+
+    private void showAnimationModelInSecondView(int angle) {
+        WritableImage originalImage = images3d1.get(angle);
+
+        WritableImage transformedImage = new WritableImage(originalImage.getPixelReader(), (int) originalImage.getWidth(), (int) originalImage.getHeight());
+
+        for (int y = 0; y < transformedImage.getHeight(); y++) {
+            for (int x = 0; x < transformedImage.getWidth(); x++) {
+                Color color = transformedImage.getPixelReader().getColor(x, y);
+
+                int average = (int) ((color.getRed() + color.getGreen() + color.getBlue()) * 255 / 3);
+
+                if (none.isSelected() && under.isSelected()  && average < (int) tresHoldSlider.getValue()) {
+                    color = Color.GREEN;
+                } else if (none.isSelected() && over.isSelected() && average > (int) tresHoldSlider.getValue()) {
+                    color = Color.RED;
+                }
+
+                transformedImage.getPixelWriter().setColor(x, y, color);
+            }
+        }
+
+        scaleImage(transformedImage, image2, image2.getImage().getWidth(), image2.getImage().getHeight(), false);
+    }
+
+    private void scaleImage(WritableImage image, ImageView imageView, double targetWidth, double targetHeight, boolean withoutTreshold) {
+        double imageWidth = image.getWidth();
+        double imageHeight = image.getHeight();
+
+        double scaleX = targetWidth / imageWidth;
+        double scaleY = targetHeight / imageHeight;
+
+        WritableImage scaledImage = new WritableImage((int) targetWidth, (int) targetHeight);
+
+        PixelWriter pixelWriter = scaledImage.getPixelWriter();
+
+        for (int y = 0; y < targetHeight; y++) {
+            for (int x = 0; x < targetWidth; x++) {
+                int originalX = (int) (x / scaleX);
+                int originalY = (int) (y / scaleY);
+
+                Color color = image.getPixelReader().getColor(originalX, originalY);
+
+                pixelWriter.setColor(x, y, color);
+            }
+        }
+
+        if (withoutTreshold) {
+            scaledImage = rotateImage(scaledImage, 2);
+
+            synchronized (images3d1) {
+                images3d1.add(scaledImage);
+            }
+        }
+
+        imageView.setImage(scaledImage);
+    }
+
+    @FXML
+    public void changeValueOfTresHoldSlider() {
+        int slider = (int) tresHoldSlider.getValue();
+        tresHold.setText(String.valueOf(slider));
+    }
+
+    @FXML
+    public void changeValueOfAnimationSlider() {
+        int slider = (int) animationSlider.getValue();
+        addListenerToAnimation();
+        showAnimationModelInSecondView(slider);
+    }
+
+    private void addListenerToAnimation() {
+        animationChangeListener = (_, _, newValue) -> {
+            int index = newValue.intValue();
+            if (index >= 0) {
+                WritableImage originalImage1 = images3d1.get(index);
+                image1.setImage(originalImage1);
+            }
+        };
+
+        animationSlider.valueProperty().addListener(animationChangeListener);
     }
 }
