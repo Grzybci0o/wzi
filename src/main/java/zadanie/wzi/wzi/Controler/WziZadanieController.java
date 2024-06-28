@@ -905,18 +905,53 @@ public class WziZadanieController {
     @FXML
     public void onProjectionButton() {
         String mode = modes.getValue();
-        int window = (int) windowValueSlider.getValue();
-        int center = (int) levelValueSlider.getValue();
         int tresHold = (int) tresHoldSlider.getValue();
 
-        WritableImage projectionImage = calculateProjection(mode, window, center, tresHold);
+        WritableImage projectionImage = calculateProjection(mode, tresHold);
         image1.setImage(projectionImage);
 
         showAnimationModelInSecondView(270, image2);
         showAnimationModelInSecondView(359, image3);
     }
 
-    private WritableImage calculateProjection(String mode, int window, int center, int tresHold) {
+    private WritableImage calculateProjection2(String mode, int window, int center, int tresHold) {
+        int rows = dicomDataList.getFirst().getRows();
+        int cols = dicomDataList.getFirst().getColumns();
+
+        WritableImage image = new WritableImage(cols, rows);
+        PixelWriter writer = image.getPixelWriter();
+
+        IntStream.range(0, rows).parallel().forEach(y -> {
+            IntStream.range(0, cols).parallel().forEach(x -> {
+                List<Integer> intensities = collectIntensities(x, y);
+                int finalValue = 0;
+
+                if (mode.equals("avg")) {
+                    finalValue = (int) intensities.stream().mapToInt(Integer::intValue).average().orElse(0);
+                } else if (mode.equals("max")) {
+                    finalValue = intensities.stream().mapToInt(Integer::intValue).max().orElse(0);
+                } else if (mode.equals("first hit")) {
+                    finalValue = intensities.stream().filter(val -> val >= tresHold).findFirst().orElse(0);
+                }
+
+                Color color = Color.rgb(finalValue, finalValue, finalValue);
+
+                int average = (int) ((color.getRed() + color.getGreen() + color.getBlue()) * 255 / 3);
+
+                if (none.isSelected() && under.isSelected()  && average < (int) tresHoldSlider.getValue()) {
+                    color = Color.RED;
+                } else if (none.isSelected() && over.isSelected() && average > (int) tresHoldSlider.getValue()) {
+                    color = Color.GREEN;
+                }
+
+                writer.setColor(x, y, color);
+            });
+        });
+
+        return image;
+    }
+
+    private WritableImage calculateProjection(String mode, int tresHold) {
         int rows = dicomDataList.getFirst().getRows();
         int cols = dicomDataList.getFirst().getColumns();
         WritableImage image = new WritableImage(cols, rows);
