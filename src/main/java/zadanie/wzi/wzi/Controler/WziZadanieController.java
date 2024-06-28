@@ -6,7 +6,6 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.*;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
@@ -126,7 +125,7 @@ public class WziZadanieController {
     Drawings drawings = new Drawings();
 
     List<DICOMData> dicomDataList = new ArrayList<>();
-    final List<WritableImage> images3d1 = new ArrayList<>();
+    final ConcurrentHashMap<Integer,WritableImage> images3d1 = new ConcurrentHashMap<>();
 
     private ChangeListener<Number> slider1ChangeListener1;
     private ChangeListener<Number> slider1ChangeListener2;
@@ -152,7 +151,7 @@ public class WziZadanieController {
 
         colors.getSelectionModel().selectFirst();
 
-        modes.getItems().addAll("none",
+        modes.getItems().addAll(
                 "avg",
                 "max",
                 "first hit");
@@ -347,12 +346,11 @@ public class WziZadanieController {
 
         animationSlider.valueProperty().removeListener(animationChangeListener);
 
-        slider1.valueProperty().removeListener(slider1ChangeListenerVoxel1);
-        slider2.valueProperty().removeListener(slider1ChangeListenerVoxel2);
-        slider3.valueProperty().removeListener(slider1ChangeListenerVoxel3);
+        slider1.valueProperty().removeListener(animationChangeListener);
 
 
         dicomDataList.clear();
+        images3d1.clear();
 
         image1.setImage(null);
         image2.setImage(null);
@@ -391,13 +389,11 @@ public class WziZadanieController {
             String[] parts1 = s1.split("(?<=\\D)(?=\\d)");
             String[] parts2 = s2.split("(?<=\\D)(?=\\d)");
 
-            // Porównanie prefiksów (części nie-liczbowych) nazw plików
             int prefixComparison = parts1[0].compareTo(parts2[0]);
             if (prefixComparison != 0) {
                 return prefixComparison;
             }
 
-            // Porównanie części liczbowych nazw plików jako liczby całkowite
             int num1 = Integer.parseInt(parts1[1]);
             int num2 = Integer.parseInt(parts2[1]);
             return Integer.compare(num1, num2);
@@ -892,7 +888,7 @@ public class WziZadanieController {
 
         parallelModel(mode, window, center, tresHold);
         showAnimationModelInSecondView(animation);
-        image3.setImage(images3d1.getLast());
+        image3.setImage(images3d1.get(359));
     }
 
     private void parallelModel(String mode, int window, int center, int tresHold) {
@@ -904,9 +900,8 @@ public class WziZadanieController {
         ForkJoinPool forkJoinPool = new ForkJoinPool(availableProcessors);
 
         ForkJoinTask<?> task = forkJoinPool.submit(() -> IntStream.range(0, 360).parallel().forEach(angle -> {
-            if (angle % 10 == 0) {
-                animationInFirstView(angle, mode, window, center, tresHold, rows, size);
-            }
+//            if (angle % 10 == 0)
+            animationInFirstView(angle, mode, window, center, tresHold, rows, size);
         }));
 
         forkJoinPool.shutdown();
@@ -931,14 +926,14 @@ public class WziZadanieController {
                 int number = 0;
 
                 for (int i = 0; i < 512; ++i) {
-                    double x_rot = (x - rows / 2) * Math.cos(Math.toRadians(angle)) - (i - 512 / 2) * Math.sin(Math.toRadians(angle)) + rows / 2;
-                    double y_rot = (x - rows / 2) * Math.sin(Math.toRadians(angle)) + (i - 512 / 2) * Math.cos(Math.toRadians(angle)) + 512 / 2;
+                    double xRotacja = (x - rows / 2) * Math.cos(Math.toRadians(angle)) - (i - 512 / 2) * Math.sin(Math.toRadians(angle)) + rows / 2;
+                    double yRotacja = (x - rows / 2) * Math.sin(Math.toRadians(angle)) + (i - 512 / 2) * Math.cos(Math.toRadians(angle)) + 512 / 2;
 
-                    int x_int = (int) Math.round(x_rot);
-                    int y_int = (int) Math.round(y_rot);
+                    int xRotationInt = (int) xRotacja;
+                    int yRotationInt = (int) yRotacja;
 
-                    if (x_int >= 0 && x_int < rows && y_int >= 0 && y_int < 512) {
-                        char value = getPixelColor(x_int, y_int, index, window, centre);
+                    if (xRotationInt >= 0 && xRotationInt < rows && yRotationInt >= 0 && yRotationInt < 512) {
+                        char value = getPixelColor(xRotationInt, yRotationInt, index, window, centre);
 
                         if (value < 255) {
                             sum += value;
@@ -947,7 +942,7 @@ public class WziZadanieController {
                         if (value > max && value < 255) {
                             max = value;
                         }
-                        if (value >= tres && value < 255 && mode.equals("firsthit")) {
+                        if (value >= tres && value < 255 && mode.equals("first hit")) {
                             firsthit = value;
                             break;
                         }
@@ -960,7 +955,7 @@ public class WziZadanieController {
                     finalValue = (char) average;
                 } else if (mode.equals("max")) {
                     finalValue = (char) max;
-                } else if (mode.equals("firsthit")) {
+                } else if (mode.equals("first hit")) {
                     finalValue = (char) firsthit;
                 }
 
@@ -969,7 +964,7 @@ public class WziZadanieController {
             });
         });
 
-        scaleImage(image, image1, image1.getImage().getWidth(), image1.getImage().getHeight(), true);
+        scaleImage(image, image1, image1.getImage().getWidth(), image1.getImage().getHeight(), true, angle);
     }
 
     private void showAnimationModelInSecondView(int angle) {
@@ -984,19 +979,19 @@ public class WziZadanieController {
                 int average = (int) ((color.getRed() + color.getGreen() + color.getBlue()) * 255 / 3);
 
                 if (none.isSelected() && under.isSelected()  && average < (int) tresHoldSlider.getValue()) {
-                    color = Color.GREEN;
-                } else if (none.isSelected() && over.isSelected() && average > (int) tresHoldSlider.getValue()) {
                     color = Color.RED;
+                } else if (none.isSelected() && over.isSelected() && average > (int) tresHoldSlider.getValue()) {
+                    color = Color.GREEN;
                 }
 
                 transformedImage.getPixelWriter().setColor(x, y, color);
             }
         }
 
-        scaleImage(transformedImage, image2, image2.getImage().getWidth(), image2.getImage().getHeight(), false);
+        scaleImage(transformedImage, image2, image2.getImage().getWidth(), image2.getImage().getHeight(), false, angle);
     }
 
-    private void scaleImage(WritableImage image, ImageView imageView, double targetWidth, double targetHeight, boolean withoutTreshold) {
+    private void scaleImage(WritableImage image, ImageView imageView, double targetWidth, double targetHeight, boolean withoutTreshold, int angle) {
         double imageWidth = image.getWidth();
         double imageHeight = image.getHeight();
 
@@ -1021,9 +1016,7 @@ public class WziZadanieController {
         if (withoutTreshold) {
             scaledImage = rotateImage(scaledImage, 2);
 
-            synchronized (images3d1) {
-                images3d1.add(scaledImage);
-            }
+            images3d1.put(angle,scaledImage);
         }
 
         imageView.setImage(scaledImage);
