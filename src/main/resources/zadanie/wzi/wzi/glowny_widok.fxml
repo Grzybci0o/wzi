@@ -16,12 +16,12 @@
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="1070.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="zadanie.wzi.wzi.Controler.WziZadanieController">
    <Pane layoutX="200.0" layoutY="29.0" prefHeight="500.0" prefWidth="1070.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
       <Separator layoutX="190.0" orientation="VERTICAL" prefHeight="500.0" prefWidth="2.0" />
-      <Button layoutX="15.0" layoutY="35.0" mnemonicParsing="false" onAction="#loadAction" prefHeight="25.0" prefWidth="160.0" text="Załaduj dane" />
-      <Button layoutX="15.0" layoutY="175.0" mnemonicParsing="false" onAction="#areaAction" prefHeight="25.0" prefWidth="160.0" text="Pokaż pole" />
-      <Button layoutX="15.0" layoutY="220.0" mnemonicParsing="false" onAction="#clearAction" prefHeight="25.0" prefWidth="160.0" text="Wyczyść obrazki" />
-      <Button layoutX="15.0" layoutY="265.0" mnemonicParsing="false" onAction="#resetAction" prefHeight="25.0" prefWidth="160.0" text="Zresetuj aplikację" />
-      <ComboBox fx:id="colors" layoutX="15.0" layoutY="80.0" onAction="#colorsAction" prefHeight="25.0" prefWidth="160.0" />
-      <CheckBox fx:id="polygon" layoutX="15.0" layoutY="118.0" mnemonicParsing="false" onAction="#polygonAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj wielokąt" />
+      <Button layoutX="15.0" layoutY="19.0" mnemonicParsing="false" onAction="#loadAction" prefHeight="25.0" prefWidth="160.0" text="Załaduj dane" />
+      <Button layoutX="15.0" layoutY="161.0" mnemonicParsing="false" onAction="#areaAction" prefHeight="25.0" prefWidth="160.0" text="Pokaż pole" />
+      <Button layoutX="15.0" layoutY="203.0" mnemonicParsing="false" onAction="#clearAction" prefHeight="25.0" prefWidth="160.0" text="Wyczyść obrazki" />
+      <Button layoutX="15.0" layoutY="238.0" mnemonicParsing="false" onAction="#resetAction" prefHeight="25.0" prefWidth="160.0" text="Zresetuj aplikację" />
+      <ComboBox fx:id="colors" layoutX="15.0" layoutY="56.0" onAction="#colorsAction" prefHeight="25.0" prefWidth="160.0" />
+      <CheckBox fx:id="polygon" layoutX="16.0" layoutY="95.0" mnemonicParsing="false" onAction="#polygonAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj wielokąt" />
       <Slider fx:id="slider1" layoutX="205.0" layoutY="315.0" max="111.0" onMouseDragged="#changeValueOfSlider1" prefHeight="14.0" prefWidth="250.0" />
       <Slider fx:id="slider3" layoutX="800.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider3" prefHeight="14.0" prefWidth="250.0" />
       <Slider fx:id="slider2" layoutX="505.0" layoutY="315.0" max="511.0" onMouseDragged="#changeValueOfSlider2" prefHeight="14.0" prefWidth="250.0" />
@@ -55,21 +55,22 @@
       <Label fx:id="brightness" layoutX="309.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
       <Label fx:id="contrast" layoutX="633.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
       <Label fx:id="windowValueLabel" layoutX="937.0" layoutY="343.0" prefHeight="17.0" prefWidth="69.0" />
-      <CheckBox fx:id="voxel" layoutX="16.0" layoutY="143.0" mnemonicParsing="false" onAction="#voxelAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj voxel" />
+      <CheckBox fx:id="voxel" layoutX="17.0" layoutY="127.0" mnemonicParsing="false" onAction="#voxelAction" prefHeight="25.0" prefWidth="160.0" text="Narysuj voxel" />
       <Slider fx:id="levelValueSlider" layoutX="800.0" layoutY="402.0" max="2000.0" onMouseDragged="#changeValueOfLevelSlider" prefHeight="14.0" prefWidth="250.0" />
       <Label layoutX="871.0" layoutY="384.0" text="Poziom:" />
       <Label fx:id="levelValueLabel" layoutX="937.0" layoutY="384.0" prefHeight="17.0" prefWidth="69.0" />
-      <Button layoutX="16.0" layoutY="317.0" mnemonicParsing="false" onAction="#animationButton" text="Animacja" />
-      <ComboBox fx:id="modes" layoutX="84.0" layoutY="317.0" prefHeight="25.0" prefWidth="92.0" />
-      <Label fx:id="machine_endian" layoutX="207.0" layoutY="449.0" prefHeight="39.0" prefWidth="159.0" text="asd" wrapText="true" />
-      <Label fx:id="files_endian" layoutX="389.0" layoutY="460.0" prefHeight="17.0" prefWidth="159.0" text="asd" />
+      <Button layoutX="18.0" layoutY="275.0" mnemonicParsing="false" onAction="#animationButton" text="Animacja" />
+      <ComboBox fx:id="modes" layoutX="86.0" layoutY="275.0" prefHeight="25.0" prefWidth="92.0" />
+      <Label fx:id="machine_endian" layoutX="207.0" layoutY="449.0" prefHeight="39.0" prefWidth="159.0" wrapText="true" />
+      <Label fx:id="files_endian" layoutX="389.0" layoutY="460.0" prefHeight="17.0" prefWidth="159.0" />
       <Slider fx:id="tresHoldSlider" layoutX="17.0" layoutY="394.0" onMouseDragged="#changeValueOfTresHoldSlider" prefHeight="14.0" prefWidth="159.0" />
       <Label layoutX="40.0" layoutY="376.0" text="Treshold:" />
       <Label fx:id="tresHold" layoutX="104.0" layoutY="376.0" prefHeight="17.0" prefWidth="64.0" />
       <Slider fx:id="animationSlider" layoutX="16.0" layoutY="354.0" max="359.0" onMouseDragged="#changeValueOfAnimationSlider" prefHeight="14.0" prefWidth="159.0" />
       <CheckBox fx:id="none" layoutX="17.0" layoutY="422.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="160.0" selected="true" text="None" />
-      <RadioButton fx:id="under" layoutX="21.0" layoutY="460.0" mnemonicParsing="false" text="Poniżej" />
-      <RadioButton fx:id="over" layoutX="100.0" layoutY="460.0" mnemonicParsing="false" text="Powyżej" />
+      <RadioButton fx:id="under" layoutX="21.0" layoutY="460.0" mnemonicParsing="false" onAction="#under" text="Poniżej" />
+      <RadioButton fx:id="over" layoutX="100.0" layoutY="460.0" mnemonicParsing="false" onAction="#over" text="Powyżej" />
+      <Button layoutX="18.0" layoutY="317.0" mnemonicParsing="false" onAction="#onProjectionButton" prefHeight="25.0" prefWidth="159.0" text="Projekcja" />
 
    </Pane>
    <Label fx:id="valueSlider1" alignment="CENTER" layoutX="305.0" layoutY="294.0" prefHeight="17.0" prefWidth="50.0" />

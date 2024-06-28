@@ -1,6 +1,7 @@
 package zadanie.wzi.wzi.Controler;
 
 import javafx.beans.value.ChangeListener;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -381,6 +382,16 @@ public class WziZadanieController {
                 case "copper" -> setCopperLUT();
             }
         }
+    }
+
+    @FXML
+    public void under() {
+        if (under.isSelected()) over.selectedProperty().setValue(false);
+    }
+
+    @FXML
+    public void over() {
+        if (over.isSelected()) under.selectedProperty().setValue(false);
     }
 
     public static class NumericStringComparator implements Comparator<String> {
@@ -887,8 +898,69 @@ public class WziZadanieController {
         int animation = (int) animationSlider.getValue();
 
         parallelModel(mode, window, center, tresHold);
-        showAnimationModelInSecondView(animation);
+        showAnimationModelInSecondView(animation, image2);
         image3.setImage(images3d1.get(359));
+    }
+
+    @FXML
+    public void onProjectionButton() {
+        String mode = modes.getValue();
+        int window = (int) windowValueSlider.getValue();
+        int center = (int) levelValueSlider.getValue();
+        int tresHold = (int) tresHoldSlider.getValue();
+
+        WritableImage projectionImage = calculateProjection(mode, window, center, tresHold);
+        image1.setImage(projectionImage);
+
+        showAnimationModelInSecondView(270, image2);
+        showAnimationModelInSecondView(359, image3);
+    }
+
+    private WritableImage calculateProjection(String mode, int window, int center, int tresHold) {
+        int rows = dicomDataList.getFirst().getRows();
+        int cols = dicomDataList.getFirst().getColumns();
+        WritableImage image = new WritableImage(cols, rows);
+        PixelWriter writer = image.getPixelWriter();
+
+        IntStream.range(0, rows).parallel().forEach(y -> {
+            IntStream.range(0, cols).parallel().forEach(x -> {
+                List<Integer> intensities = collectIntensities(x, y);
+                int finalValue = 0;
+
+                if (mode.equals("avg")) {
+                    finalValue = (int) intensities.stream().mapToInt(Integer::intValue).average().orElse(0);
+                } else if (mode.equals("max")) {
+                    finalValue = intensities.stream().mapToInt(Integer::intValue).max().orElse(0);
+                } else if (mode.equals("first hit")) {
+                    finalValue = intensities.stream().filter(val -> val >= tresHold).findFirst().orElse(0);
+                }
+
+                Color color = Color.rgb(finalValue, finalValue, finalValue);
+
+                int average = (int) ((color.getRed() + color.getGreen() + color.getBlue()) * 255 / 3);
+
+                if (none.isSelected() && under.isSelected()  && average < (int) tresHoldSlider.getValue()) {
+                    color = Color.RED;
+                } else if (none.isSelected() && over.isSelected() && average > (int) tresHoldSlider.getValue()) {
+                    color = Color.GREEN;
+                }
+
+                writer.setColor(x, y, color);
+            });
+        });
+
+        return image;
+    }
+
+    private List<Integer> collectIntensities(int x, int y) {
+        List<Integer> intensities = new ArrayList<>();
+
+        for (DICOMData dicom : dicomDataList) {
+            int intensity = getPixelColor(x, y, dicomDataList.indexOf(dicom), (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            intensities.add((int) intensity);
+        }
+
+        return intensities;
     }
 
     private void parallelModel(String mode, int window, int center, int tresHold) {
@@ -967,7 +1039,7 @@ public class WziZadanieController {
         scaleImage(image, image1, image1.getImage().getWidth(), image1.getImage().getHeight(), true, angle);
     }
 
-    private void showAnimationModelInSecondView(int angle) {
+    private void showAnimationModelInSecondView(int angle, ImageView imageView) {
         WritableImage originalImage = images3d1.get(angle);
 
         WritableImage transformedImage = new WritableImage(originalImage.getPixelReader(), (int) originalImage.getWidth(), (int) originalImage.getHeight());
@@ -988,7 +1060,7 @@ public class WziZadanieController {
             }
         }
 
-        scaleImage(transformedImage, image2, image2.getImage().getWidth(), image2.getImage().getHeight(), false, angle);
+        scaleImage(transformedImage, imageView, image2.getImage().getWidth(), image2.getImage().getHeight(), false, angle);
     }
 
     private void scaleImage(WritableImage image, ImageView imageView, double targetWidth, double targetHeight, boolean withoutTreshold, int angle) {
@@ -1032,7 +1104,7 @@ public class WziZadanieController {
     public void changeValueOfAnimationSlider() {
         int slider = (int) animationSlider.getValue();
         addListenerToAnimation();
-        showAnimationModelInSecondView(slider);
+        showAnimationModelInSecondView(slider, image2);
     }
 
     private void addListenerToAnimation() {
