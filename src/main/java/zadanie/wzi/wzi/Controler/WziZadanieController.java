@@ -122,7 +122,6 @@ public class WziZadanieController {
     @FXML
     private void initialize() {
         colors.getItems().addAll("gray",
-                "twilight",
                 "viridis",
                 "inferno",
                 "ocean",
@@ -238,27 +237,27 @@ public class WziZadanieController {
     @FXML
     protected void areaAction() {
         if (!dicomDataList.isEmpty()) {
-                labelAreaPixel.setVisible(true);
-                labelAreaVoxel.setVisible(true);
-                labelPerimeterPixel.setVisible(true);
-                labelPerimeterVoxel.setVisible(true);
+            labelAreaPixel.setVisible(true);
+            labelAreaVoxel.setVisible(true);
+            labelPerimeterPixel.setVisible(true);
+            labelPerimeterVoxel.setVisible(true);
 
-                double areaInPixels = calculateAreaInVoxels(point2DListForImage1);
-                double areaInVoxels = calculateSurfaceArea(point2DListForImage1);
+            double areaInPixels = calculateAreaInVoxels(point2DListForImage1);
+            double areaInVoxels = calculateSurfaceArea(point2DListForImage1);
 
-                double perimeterInPixels = calculatePerimeter(point2DListForImage1);
-                double perimeterInVoxels = calculatePerimeterInVoxels(point2DListForImage1);
+            double perimeterInPixels = calculatePerimeter(point2DListForImage1);
+            double perimeterInVoxels = calculatePerimeterInVoxels(point2DListForImage1);
 
-                areaPixel.setText(String.format("%.2f pixeli", areaInPixels));
-                areaVoxel.setText(String.format("%.2f voxeli", areaInVoxels));
+            areaPixel.setText(String.format("%.2f pixeli", areaInPixels));
+            areaVoxel.setText(String.format("%.2f voxeli", areaInVoxels));
 
-                perimeterPixel.setText(String.format("%.2f pixeli", perimeterInPixels));
-                perimeterVoxel.setText(String.format("%.2f voxeli", perimeterInVoxels));
+            perimeterPixel.setText(String.format("%.2f pixeli", perimeterInPixels));
+            perimeterVoxel.setText(String.format("%.2f voxeli", perimeterInVoxels));
 
-                var pixels = drawings.getPolygonPointsList();
-                for (double[] pixel : pixels) {
-                    System.out.println(pixel[0] + " " + pixel[1]);
-                }
+            var pixels = drawings.getPolygonPointsList();
+            for (double[] pixel : pixels) {
+                System.out.println(pixel[0] + " " + pixel[1]);
+            }
         } else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Błąd!");
@@ -320,7 +319,6 @@ public class WziZadanieController {
     private void SwtichLUT(String selectedColormap) {
         switch (selectedColormap) {
             case "gray" -> setGrayLUT();
-            case "twilight " -> setTwilightLUT();
             case "viridis" -> setViridisLUT();
             case "inferno" -> setInfernoLUT();
             case "ocean" -> setOceanLUT();
@@ -342,8 +340,6 @@ public class WziZadanieController {
     }
 
     private void setGistHeistLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -377,8 +373,6 @@ public class WziZadanieController {
     }
 
     private void setCopperLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -410,8 +404,6 @@ public class WziZadanieController {
     }
 
     private void setOceanLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -443,8 +435,6 @@ public class WziZadanieController {
     }
 
     private void setInfernoLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -476,8 +466,6 @@ public class WziZadanieController {
     }
 
     private void setViridisLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -508,44 +496,7 @@ public class WziZadanieController {
         }
     }
 
-    private void setTwilightLUT() {
-        resetToOriginalImages();
-
-        ImageView[] imageViews = {image1, image2, image3};
-        for (ImageView imageView : imageViews) {
-            Image image = imageView.getImage();
-            if (image != null) {
-                int width = (int) image.getWidth();
-                int height = (int) image.getHeight();
-
-                WritableImage newImage = new WritableImage(width, height);
-                PixelReader pixelReader = image.getPixelReader();
-                PixelWriter pixelWriter = newImage.getPixelWriter();
-
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        Color color = pixelReader.getColor(x, y);
-                        double grayValue = color.grayscale().getRed(); // Get grayscale value
-
-                        // Twilight colormap transformation
-                        double hue = 0.65 - grayValue * 0.35; // Adjusted hue shift for Twilight-like colormap
-                        double saturation = 0.8 + 0.2 * grayValue;
-                        double brightness = 0.6 + 0.4 * grayValue;
-
-                        Color twilightColor = Color.hsb(hue * 360, saturation, brightness);
-
-                        pixelWriter.setColor(x, y, twilightColor);
-                    }
-                }
-
-                imageView.setImage(newImage);
-            }
-        }
-    }
-
     private void setGrayLUT() {
-        resetToOriginalImages();
-
         ImageView[] imageViews = {image1, image2, image3};
         for (ImageView imageView : imageViews) {
             Image image = imageView.getImage();
@@ -613,34 +564,36 @@ public class WziZadanieController {
 
     @FXML
     public void imgae1Clicked(MouseEvent mouseEvent) {
-        int size = dicomDataList.size();
-        int index = (int) slider1.getValue();
-        DICOMData dicom = dicomDataList.get(index);
+        if (voxel.isSelected()) {
+            int size = dicomDataList.size();
+            int index = (int) slider1.getValue();
+            DICOMData dicom = dicomDataList.get(index);
 
-        int x = (int) mouseEvent.getX();
-        int y = (int) mouseEvent.getY();
+            int x = (int) mouseEvent.getX();
+            int y = (int) mouseEvent.getY();
 
-        point2DListForImage1.add(new Point3D(x, y, (int) slider1.getValue()));
-        for (int test = 1; test < size; test++)
-            for (Point3D point : point2DListForImage1) {
-                if (test >= point.getZ() - 1 && test <= point.getZ() + 1) {
-                    for (int i = (int) point.getX() - 5; i <= point.getX() + 5; i++) {
-                        for (int j = (int) point.getY() - 5; j <= point.getY() + 5; j++) {
-                            dicom.setPixelGreen(i, j);
+            point2DListForImage1.add(new Point3D(x, y, (int) slider1.getValue()));
+            for (int k = 1; k < size; k++)
+                for (Point3D point : point2DListForImage1) {
+                    if (k >= point.getZ() - 1 && k <= point.getZ() + 1) {
+                        for (int i = (int) point.getX() - 5; i <= point.getX() + 5; i++) {
+                            for (int j = (int) point.getY() - 5; j <= point.getY() + 5; j++) {
+                                dicom.setPixelGreen(i, j);
+                            }
                         }
                     }
                 }
-            }
 
-        showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            showImageInFirstView(index, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
 
-        slider2.setValue(x);
-        valueSlider2.setText(String.valueOf((int) slider2.getValue()));
-        showImageInSecondView(x, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            slider2.setValue(x);
+            valueSlider2.setText(String.valueOf((int) slider2.getValue()));
+            showImageInSecondView(x, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
 
-        slider3.setValue(y);
-        valueSlider3.setText(String.valueOf((int) slider2.getValue()));
-        showImageInThirdView(y, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+            slider3.setValue(y);
+            valueSlider3.setText(String.valueOf((int) slider2.getValue()));
+            showImageInThirdView(y, (int) windowValueSlider.getValue(), (int) levelValueSlider.getValue());
+        }
     }
 
     @FXML
@@ -650,7 +603,7 @@ public class WziZadanieController {
 
         int x = (int) mouseEvent.getX();
         int y = (int) mouseEvent.getY();
-
+        System.out.println(x + " " + y);
         DICOMData dicom = dicomDataList.get(y);
 
         point2DListForImage2.add(new Point3D(x, y, index));
@@ -774,7 +727,7 @@ public class WziZadanieController {
         levelValueLabel.setText(String.valueOf(0));
     }
 
-    public Double calculateAreaInVoxels(List < Point3D > points) {
+    public Double calculateAreaInVoxels(List<Point3D> points) {
         if (points.size() < 3) {
             return 0.0;
         }
@@ -817,7 +770,7 @@ public class WziZadanieController {
         return Math.abs(area) / 2.0;
     }
 
-    public double calculatePerimeterInVoxels(List < Point3D > points) {
+    public double calculatePerimeterInVoxels(List<Point3D> points) {
         // Przeliczenie pixelSpacing na rozmiar wokseli w odpowiednich wymiarach
         float pixelSizeX = dicomDataList.get(0).getPixelSpacing()[0];
         float pixelSizeY = dicomDataList.get(0).getPixelSpacing()[1];
@@ -835,7 +788,7 @@ public class WziZadanieController {
     }
 
     //w pikselach
-    public double calculatePerimeter(List < Point3D > points) {
+    public double calculatePerimeter(List<Point3D> points) {
         double perimeter = 0.0;
         for (int i = 0; i < points.size(); i++) {
             Point3D current = points.get(i);
